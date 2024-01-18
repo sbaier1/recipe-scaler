@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Recipe Scaler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f8f8f8;
+            font-size: 16px;
+            padding: 10px;
+            text-align: center; /* Centering content */
+        }
+
+        #controlPanel {
+            margin-bottom: 20px;
+        }
+
+        #scaleFactor {
+            width: 100px;
+            padding: 10px;
+            margin-bottom: 10px; /* Added margin for spacing between input and buttons */
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100px; /* Larger width for easier touch */
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            /* Space around buttons */
+            display: block; /* Block level makes it easier to tap */
+            /* Centering buttons */
+            margin: 5px auto;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #recipe {
+            width: 100%;
+            max-width: 100%;
+            height: 250px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                font-size: 18px;
+            }
+
+            #scaleFactor, button {
+                width: 80%; /* Larger and more accessible on mobile */
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+    <script>
+        let previousFactor = 1; // A var to store the previous scale factor
+
+        function updateURL(factor, recipeText) {
+            window.location.hash = 'factor=' + encodeURIComponent(factor) + '&recipe=' + encodeURIComponent(recipeText);
+        }
+
+        function scaleRecipe(newFactor) {
+            let recipeText = document.getElementById('recipe').value;
+            let scaleRatio = newFactor / previousFactor; // Calculate the scaling ratio
+            let lines = recipeText.split('\n');
+            let scaledRecipe = lines.map(line => {
+                let match = line.match(/^(\d+(\.\d+)?)/);
+                if (match && !isNaN(parseFloat(match[0]))) {
+                    let quantity = parseFloat(match[0]);
+                    return (quantity * scaleRatio) + line.substring(match[0].length);
+                }
+                return line;
+            }).join('\n');
+            document.getElementById('recipe').value = scaledRecipe;
+            updateURL(newFactor, scaledRecipe);
+            previousFactor = newFactor; // Update the previous factor
+        }
+
+        function getScaleFactor() {
+            let scaleFactorInput = document.getElementById('scaleFactor');
+            let factor = parseFloat(scaleFactorInput.value);
+            if (isNaN(factor) || factor <= 0) {
+                factor = 1;
+                scaleFactorInput.value = factor;
+            }
+            return factor;
+        }
+
+        window.onload = function () {
+            parseURL();
+
+            document.getElementById('scaleUp').onclick = function () {
+                let factor = getScaleFactor() * 2;
+                scaleRecipe(factor);
+                document.getElementById('scaleFactor').value = factor;
+            };
+
+            document.getElementById('scaleDown').onclick = function () {
+                let factor = getScaleFactor() * 0.5;
+                scaleRecipe(factor);
+                document.getElementById('scaleFactor').value = factor;
+            };
+
+            document.getElementById('scaleFactor').onchange = function () {
+                scaleRecipe(getScaleFactor());
+            };
+
+            document.getElementById('recipe').onchange = function () {
+                updateURL(getScaleFactor(), document.getElementById('recipe').value);
+            };
+        };
+
+        function parseURL() {
+            let hash = window.location.hash.substring(1);
+            let params = new URLSearchParams(hash);
+            let factor = params.get('factor');
+            let recipe = params.get('recipe');
+
+            if (factor && !isNaN(parseFloat(factor))) {
+                document.getElementById('scaleFactor').value = factor;
+                previousFactor = factor; // Set the previous factor
+            } else {
+                document.getElementById('scaleFactor').value = 1;
+            }
+            if (recipe) {
+                document.getElementById('recipe').value = decodeURIComponent(recipe);
+            }
+        }
+    </script>
+</head>
+
+<body>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<div id="controlPanel">
+    Scale Factor: <label for="scaleFactor"></label><input type="number" id="scaleFactor" value="1" step="0.1"><br>
+    <button id="scaleUp">x2</button>
+    <button id="scaleDown">/2</button>
+</div>
+<label for="recipe"></label><textarea id="recipe" placeholder="Enter your recipe here..."></textarea>
+</body>
+
+</html>
