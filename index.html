@@ -67,81 +67,86 @@
             }
         }
     </style>
-    <script>
-        let previousFactor = 1; // A var to store the previous scale factor
+<script>
+    let previousFactor = 1; // A var to store the previous scale factor
 
-        function updateURL(factor, recipeText) {
-            window.location.hash = 'factor=' + encodeURIComponent(factor) + '&recipe=' + encodeURIComponent(recipeText);
+    function updateURL(factor, recipeText) {
+        window.location.hash = 'factor=' + encodeURIComponent(factor) + '&recipe_b64=' + btoa(recipeText);
+    }
+
+    function parseURL() {
+        let hash = window.location.hash.substring(1);
+        let params = new URLSearchParams(hash);
+
+        let factor = params.get('factor');
+        if (factor && !isNaN(parseFloat(factor))) {
+            document.getElementById('scaleFactor').value = factor;
+            previousFactor = factor; // Set the previous factor
+        } else {
+            document.getElementById('scaleFactor').value = 1;
         }
 
-        function scaleRecipe(newFactor) {
-            let recipeText = document.getElementById('recipe').value;
-            let scaleRatio = newFactor / previousFactor; // Calculate the scaling ratio
-            let lines = recipeText.split('\n');
-            let scaledRecipe = lines.map(line => {
-                let match = line.match(/^(\d+(\.\d+)?)/);
-                if (match && !isNaN(parseFloat(match[0]))) {
-                    let quantity = parseFloat(match[0]);
-                    return (quantity * scaleRatio) + line.substring(match[0].length);
-                }
-                return line;
-            }).join('\n');
-            document.getElementById('recipe').value = scaledRecipe;
-            updateURL(newFactor, scaledRecipe);
-            previousFactor = newFactor; // Update the previous factor
-        }
+        let recipeParam = params.get('recipe');
+        let recipeB64Param = params.get('recipe_b64');
 
-        function getScaleFactor() {
-            let scaleFactorInput = document.getElementById('scaleFactor');
-            let factor = parseFloat(scaleFactorInput.value);
-            if (isNaN(factor) || factor <= 0) {
-                factor = 1;
-                scaleFactorInput.value = factor;
+        if (recipeB64Param) {
+            document.getElementById('recipe').value = atob(recipeB64Param);
+        } else if (recipeParam) {
+            document.getElementById('recipe').value = decodeURIComponent(recipeParam);
+        }
+    }
+
+    function scaleRecipe(newFactor) {
+        let recipeText = document.getElementById('recipe').value;
+        let scaleRatio = newFactor / previousFactor; // Calculate the scaling ratio
+        let lines = recipeText.split('\n');
+        let scaledRecipe = lines.map(line => {
+            let match = line.match(/^(\d+(\.\d+)?)/);
+            if (match && !isNaN(parseFloat(match[0]))) {
+                let quantity = parseFloat(match[0]);
+                return (quantity * scaleRatio) + line.substring(match[0].length);
             }
-            return factor;
+            return line;
+        }).join('\n');
+        document.getElementById('recipe').value = scaledRecipe;
+        updateURL(newFactor, recipeText);
+        previousFactor = newFactor; // Update the previous factor
+    }
+
+    function getScaleFactor() {
+        let scaleFactorInput = document.getElementById('scaleFactor');
+        let factor = parseFloat(scaleFactorInput.value);
+        if (isNaN(factor) || factor <= 0) {
+            factor = 1;
+            scaleFactorInput.value = factor;
         }
+        return factor;
+    }
 
-        window.onload = function () {
-            parseURL();
+    window.onload = function () {
+        parseURL();
 
-            document.getElementById('scaleUp').onclick = function () {
-                let factor = getScaleFactor() * 2;
-                scaleRecipe(factor);
-                document.getElementById('scaleFactor').value = factor;
-            };
-
-            document.getElementById('scaleDown').onclick = function () {
-                let factor = getScaleFactor() * 0.5;
-                scaleRecipe(factor);
-                document.getElementById('scaleFactor').value = factor;
-            };
-
-            document.getElementById('scaleFactor').onchange = function () {
-                scaleRecipe(getScaleFactor());
-            };
-
-            document.getElementById('recipe').onchange = function () {
-                updateURL(getScaleFactor(), document.getElementById('recipe').value);
-            };
+        document.getElementById('scaleUp').onclick = function () {
+            let factor = getScaleFactor() * 2;
+            scaleRecipe(factor);
+            document.getElementById('scaleFactor').value = factor;
         };
 
-        function parseURL() {
-            let hash = window.location.hash.substring(1);
-            let params = new URLSearchParams(hash);
-            let factor = params.get('factor');
-            let recipe = params.get('recipe');
+        document.getElementById('scaleDown').onclick = function () {
+            let factor = getScaleFactor() * 0.5;
+            scaleRecipe(factor);
+            document.getElementById('scaleFactor').value = factor;
+        };
 
-            if (factor && !isNaN(parseFloat(factor))) {
-                document.getElementById('scaleFactor').value = factor;
-                previousFactor = factor; // Set the previous factor
-            } else {
-                document.getElementById('scaleFactor').value = 1;
-            }
-            if (recipe) {
-                document.getElementById('recipe').value = decodeURIComponent(recipe);
-            }
-        }
-    </script>
+        document.getElementById('scaleFactor').onchange = function () {
+            scaleRecipe(getScaleFactor());
+        };
+
+        document.getElementById('recipe').onchange = function () {
+            updateURL(getScaleFactor(), document.getElementById('recipe').value);
+        };
+    };
+</script>
 </head>
 
 <body>
